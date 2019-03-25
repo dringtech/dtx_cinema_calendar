@@ -84,15 +84,150 @@ h1. Textile-formatted help goes here
 
 // Register the new tag with Textpattern.
 \Txp::get('\Textpattern\Tag\Registry')
-   ->register('dtx_cinema_hello');
+   ->register('dtx_showing_event')
+   ->register('dtx_now');
 
 /**
  * Tag to output hello world.
  */
-function dtx_cinema_hello($atts, $thing = null)
+function dtx_showing_event($atts, $thing = null)
 {
-    return 'Hello DTX Cinema!';
+    extract(lAtts(array(
+        'from'       => '',
+        'to'         => '',
+        'details'    => '',
+        'section'    => null,
+    ), $atts));
+
+    $message = dtx_get_events($details, $from, $to, $section);
+
+    return $message;
 }
+
+function dtx_get_events($details, $earliest, $latest, $section = null)
+{
+    $earliest = safe_strtotime($earliest);
+    $latest = safe_strtotime($latest);
+    $columns = array();
+    $columns[] = 'ID';
+    $columns[] = "${details} AS showings";
+
+    $filter = array();
+    $filter[] = "TRIM(IFNULL(${details},'')) <> ''";
+    if ($section) {
+        $secFilter = 'AND Section IN ('
+            . join(',', array_map('doQuote', doSlash(do_list($section))))
+            . ')';
+        $filter[] = $secFilter;
+    }
+
+    $events = safe_rows(join(',', $columns), 'textpattern', join(' ', $filter));
+
+    $split_showings = function ($carry, $item) {
+        $showings = do_list($item['showings'], "\n");
+        unset($item['showings']);
+
+        $format_showing = function ($val) use ($item) {
+            $rawData = preg_split("/\s+/", $val);
+            $date = safe_strtotime(join(' ', array_slice($rawData, 0, 2)));
+            if ($date == '0') return;
+            $date = safe_strftime('%s', $date);
+            $flags = array_slice($rawData, 2);
+            return array_merge( array( 'date' => $date, 'flags' => $flags ), $item );
+        };
+
+        $output = array_map( $format_showing, $showings );
+
+        return array_merge($carry, $output);
+    };
+    
+    $events = array_reduce( $events, $split_showings, array() );
+
+    $dtx_date_filter = function ($event) use ($earliest, $latest) {
+        return $event['date'] >= $earliest && $event['date'] <= $latest;
+    };
+
+    $events = array_filter($events, $dtx_date_filter);
+
+    dmp($events);
+    return $events;
+}
+
+function dtx_filter_showings($events, $earliest, $latest) {
+
+}
+
+function dtx_now($atts)
+{
+    global $dateformat;
+
+    extract(lAtts(array(
+        'format' => $dateformat,
+        'now'    => '',
+        'offset' => '',
+        'gmt'    => '',
+        'lang'   => '',
+        'fixed'  => 0,
+    ), $atts));
+
+    $theDay = (gps('d') && is_numeric(gps('d')) && !$fixed) ? (int)gps('d') : safe_strftime('%d');
+    $theMonth = (gps('m') && is_numeric(gps('m')) && !$fixed) ? (int)gps('m') : safe_strftime('%m');
+    $theYear = (gps('y') && is_numeric(gps('y')) && !$fixed) ? (int)gps('y') : safe_strftime('%Y');
+    if ($now) {
+        $now = str_replace("?month", date('F', mktime(12,0,0,$theMonth,$theDay,$theYear)), $now);
+        $now = str_replace("?year", $theYear, $now);
+        $now = str_replace("?day", $theDay, $now);
+        $now = is_numeric($now) ? $now : strtotime($now);
+    } else {
+        $now = time();
+    }
+
+    if ($offset) {
+        $now = strtotime($offset, $now);
+    }
+
+    $format = smd_cal_reformat_win($format, $now);
+    return safe_strftime($format, $now, $gmt, $lang);
+}
+
+// Adapted from: http://php.net/manual/en/function.strftime.php
+function dtx_cal_reformat_win($format, $ts = null)
+{
+    // Only Win platforms need apply
+    if (!IS_WIN) {
+        return $format;
+    }
+
+    if (!$ts) $ts = time();
+
+    $mapping = array(
+        '%C' => sprintf("%02d", date("Y", $ts) / 100),
+        '%D' => '%m/%d/%y',
+        '%e' => sprintf("%' 2d", date("j", $ts)),
+        '%F' => '%Y-%m-%d',
+        '%g' => smd_cal_iso_week('%g', $ts),
+        '%G' => smd_cal_iso_week('%G', $ts),
+        '%h' => '%b',
+        '%l' => sprintf("%' 2d", date("g", $ts)),
+        '%n' => "\n",
+        '%P' => date('a', $ts),
+        '%r' => date("h:i:s", $ts) . " %p",
+        '%R' => date("H:i", $ts),
+        '%s' => date('U', $ts),
+        '%t' => "\t",
+        '%T' => '%H:%M:%S',
+        '%u' => ($w = date("w", $ts)) ? $w : 7,
+        '%V' => smd_cal_iso_week('%V', $ts),
+    );
+    $format = str_replace(
+        array_keys($mapping),
+        array_values($mapping),
+        $format
+    );
+
+    return $format;
+}
+
 # --- END PLUGIN CODE ---
 
 ?>
