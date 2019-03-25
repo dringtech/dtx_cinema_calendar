@@ -144,17 +144,14 @@ function dtx_get_events($details, $earliest, $latest, $section = null)
     $events = array_reduce( $events, $split_showings, array() );
 
     $dtx_date_filter = function ($event) use ($earliest, $latest) {
-        return $event['date'] >= $earliest && $event['date'] <= $latest;
+        $date = intval($event['date']);
+        return ($date >= intval($earliest)) && ($date <= intval($latest));
     };
 
     $events = array_filter($events, $dtx_date_filter);
 
     dmp($events);
     return $events;
-}
-
-function dtx_filter_showings($events, $earliest, $latest) {
-
 }
 
 function dtx_now($atts)
