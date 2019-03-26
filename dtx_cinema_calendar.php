@@ -225,11 +225,15 @@ function dtx_showing_details($atts, $thing = null) {
 
     $flags = $thisarticle['dtx']['flags'];
 
+    $makeIcon = function ($icon, $label) {
+        return '<div class="icon"><i class="fas '.$icon.'"></i></div><div class="label">'.$label.'</div>';
+    };
+
     $details = array(
-        'A' => '<i aria-label="Audio Described film" class="fas fa-audio-description"></i> Audio Description',
-        'S' => '<i aria-label="Soft subtitles film" class="fas fa-closed-captioning"></i> Subtitled',
-        'PB' => '<i class="fas fa-baby-carriage"></i> Parent & Baby',
-        '11' => '<i class="fas fa-mug-hot"></i> Elevenses',
+        'A' => $makeIcon('fa-audio-description', 'Audio Description'),
+        'S' => $makeIcon('fa-closed-captioning', 'Subtitled'),
+        'PB' => $makeIcon('fa-baby-carriage', 'Parent & Baby'),
+        '11' => $makeIcon('fa-mug-hot', 'Elevenses'),
     );
 
     $out = array_map(function ($flag) use ($details) {
