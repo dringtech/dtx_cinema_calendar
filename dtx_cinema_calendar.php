@@ -85,6 +85,7 @@ h1. Textile-formatted help goes here
 // Register the new tag with Textpattern.
 \Txp::get('\Textpattern\Tag\Registry')
    ->register('dtx_showing_event')
+   ->register('dtx_extra_details')
    ->register('dtx_now');
 
 /**
@@ -200,6 +201,7 @@ function dtx_render_articles($events, $thing = null) {
         $render = function ($event) use ($thing) {
             global $thisarticle;
             populateArticleData($event);
+            dtx_add_showing_extensions($event);
             return parse($thing);
         };    
     } else {
@@ -209,6 +211,22 @@ function dtx_render_articles($events, $thing = null) {
     }
 
     return array_map($render, $events);
+}
+
+function dtx_add_showing_extensions($event) {
+    global $thisarticle;
+    $thisarticle['dtx']['flags'] = $event['Flags'];
+}
+
+function dtx_extra_details($atts, $thing = null) {
+    global $thisarticle;
+
+    extract(lAtts(array(
+        'field' => null,
+    ), $atts));
+
+    if (!$field) return;
+    return $field;
 }
 
 function dtx_now($atts)
