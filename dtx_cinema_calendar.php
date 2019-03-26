@@ -142,11 +142,13 @@ function dtx_split_showings($events) {
 
         $format_showing = function ($val) use ($item) {
             $rawData = preg_split("/\s+/", $val);
-            $date = safe_strtotime(join(' ', array_slice($rawData, 0, 2)));
-            if ($date == '0') return;
-            $date = safe_strftime('%s', $date);
+            try {
+                $date = new DateTime(join(' ', array_slice($rawData, 0, 2)));
+            } catch (Exception $e) {
+                return;
+            }
             $flags = array_slice($rawData, 2);
-            return array_merge( array( 'posted' => $date, 'Flags' => $flags ), $item );
+            return array_merge( array( 'Posted' => $date->format(DATE_W3C), 'Flags' => $flags ), $item );
         };
 
         $output = array_map( $format_showing, $showings );
@@ -162,7 +164,8 @@ function dtx_filter_showings($events, $earliest = null, $latest = null) {
     $latest = intval(safe_strtotime($latest));
 
     $dtx_date_filter = function ($event) use ($earliest, $latest) {
-        $date = intval($event['posted']);
+        if (!$event['Posted']) return false;
+        $date = intval(safe_strtotime($event['Posted']));
         return ($date >= intval($earliest)) && ($date <= intval($latest));
     };
 
