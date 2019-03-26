@@ -110,6 +110,7 @@ function dtx_get_events($details, $earliest, $latest, $section = null, $rating =
     $events = dtx_get_showing_data($details, $section);
     $events = dtx_split_showings($events);
     $events = dtx_filter_showings($events, $earliest, $latest);
+    $events = dtx_sort_showings($events);
     $events = dtx_augment_showings($events, $rating);
 
     array_map('populateArticleData', $events);
@@ -170,6 +171,11 @@ function dtx_filter_showings($events, $earliest = null, $latest = null) {
     };
 
     return array_filter($events, $dtx_date_filter);
+}
+
+function dtx_sort_showings($events) {
+    array_multisort(array_column($events, 'Posted'), SORT_ASC, $events);
+    return $events;
 }
 
 function dtx_augment_showings($events, $rating = null) {
