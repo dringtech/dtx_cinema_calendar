@@ -106,8 +106,17 @@ function dtx_showing_event($atts, $thing = null)
 
 function dtx_get_events($details, $earliest, $latest, $section = null)
 {
-    $earliest = safe_strtotime($earliest);
-    $latest = safe_strtotime($latest);
+    $events = dtx_get_showing_data($details, $section);
+    $events = dtx_split_showings($events);
+    $events = dtx_filter_showings($events, $earliest, $latest);
+
+    array_map('populateArticleData', $events);
+
+    dmp($events);
+    return $events;
+}
+
+function dtx_get_showing_data($details, $section = null) {
     $columns = array();
     $columns[] = 'ID';
     $columns[] = "${details} AS showings";
@@ -121,8 +130,10 @@ function dtx_get_events($details, $earliest, $latest, $section = null)
         $filter[] = $secFilter;
     }
 
-    $events = safe_rows(join(',', $columns), 'textpattern', join(' ', $filter));
+    return safe_rows(join(',', $columns), 'textpattern', join(' ', $filter));
+}
 
+function dtx_split_showings($events) {
     $split_showings = function ($carry, $item) {
         $showings = do_list($item['showings'], "\n");
         unset($item['showings']);
@@ -133,7 +144,7 @@ function dtx_get_events($details, $earliest, $latest, $section = null)
             if ($date == '0') return;
             $date = safe_strftime('%s', $date);
             $flags = array_slice($rawData, 2);
-            return array_merge( array( 'date' => $date, 'flags' => $flags ), $item );
+            return array_merge( array( 'posted' => $date, 'Flags' => $flags ), $item );
         };
 
         $output = array_map( $format_showing, $showings );
@@ -141,17 +152,20 @@ function dtx_get_events($details, $earliest, $latest, $section = null)
         return array_merge($carry, $output);
     };
     
-    $events = array_reduce( $events, $split_showings, array() );
+    return array_reduce( $events, $split_showings, array() );
+}
+
+function dtx_filter_showings($events, $earliest = null, $latest = null) {
+    $earliest = intval(safe_strtotime($earliest));
+    $latest = intval(safe_strtotime($latest));
 
     $dtx_date_filter = function ($event) use ($earliest, $latest) {
-        $date = intval($event['date']);
+        $date = intval($event['posted']);
         return ($date >= intval($earliest)) && ($date <= intval($latest));
     };
 
-    $events = array_filter($events, $dtx_date_filter);
+    return array_filter($events, $dtx_date_filter);
 
-    dmp($events);
-    return $events;
 }
 
 function dtx_now($atts)
