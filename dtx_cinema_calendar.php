@@ -86,6 +86,7 @@ h1. Textile-formatted help goes here
 \Txp::get('\Textpattern\Tag\Registry')
    ->register('dtx_showing_event')
    ->register('dtx_extra_details')
+   ->register('dtx_showing_details')
    ->register('dtx_now');
 
 /**
@@ -216,6 +217,25 @@ function dtx_render_articles($events, $thing = null) {
 function dtx_add_showing_extensions($event) {
     global $thisarticle;
     $thisarticle['dtx']['flags'] = $event['Flags'];
+}
+
+function dtx_showing_details($atts, $thing = null) {
+    global $thisarticle;
+
+    $flags = $thisarticle['dtx']['flags'];
+
+    $details = array(
+        'A' => '<i aria-label="Audio Described film" class="fas fa-audio-description"></i> Audio Description',
+        'S' => '<i aria-label="Soft subtitles film" class="fas fa-closed-captioning"></i> Subtitled',
+        'PB' => '<i class="fas fa-baby-carriage"></i> Parent & Baby',
+        '11' => '<i class="fas fa-mug-hot"></i> Elevenses',
+    );
+
+    $out = array_map(function ($flag) use ($details) {
+        return $details[$flag];
+    }, $flags);
+
+    return doWrap($out, 'ul', 'li', 'showing-details');
 }
 
 function dtx_extra_details($atts, $thing = null) {
