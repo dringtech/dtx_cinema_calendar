@@ -141,17 +141,18 @@ function dtx_get_showing_data($details, $section = null) {
 
 function dtx_split_showings($events) {
     $split_showings = function ($carry, $item) {
-        $showings = do_list($item['showings'], "\n");
+        $showings = do_list($item['showings'], ";");
         unset($item['showings']);
 
         $format_showing = function ($val) use ($item) {
-            $rawData = preg_split("/\s+/", $val);
+            $rawData = do_list($val, ",");
+            if ($rawData[0] == '') return NULL;
             try {
-                $date = new DateTime(join(' ', array_slice($rawData, 0, 2)));
+                $date = new DateTime($rawData[0]);
             } catch (Exception $e) {
                 return NULL;
             }
-            $flags = array_slice($rawData, 2);
+            $flags = (sizeof($rawData) > 1) ? preg_split("/\s+/", $rawData[1]) : array();
             return array_merge( array(
                 'Posted' => $date->format('Y-m-d H:i:s'),
                 'uPosted' => $date->format('U'),
