@@ -112,10 +112,6 @@ function dtx_get_events($details, $earliest, $latest, $section = null, $rating =
     $events = dtx_filter_showings($events, $earliest, $latest);
     $events = dtx_sort_showings($events);
     $events = dtx_augment_showings($events, $rating);
-
-    array_map('populateArticleData', $events);
-
-    dmp($events);
     return $events;
 }
 
@@ -149,7 +145,11 @@ function dtx_split_showings($events) {
                 return;
             }
             $flags = array_slice($rawData, 2);
-            return array_merge( array( 'Posted' => $date->format(DATE_W3C), 'Flags' => $flags ), $item );
+            return array_merge( array(
+                'Posted' => $date->format('Y-m-d H:i:s'),
+                'uPosted' => $date->format('U'),
+                'Flags' => $flags
+            ), $item );
         };
 
         $output = array_map( $format_showing, $showings );
@@ -179,14 +179,14 @@ function dtx_sort_showings($events) {
 }
 
 function dtx_augment_showings($events, $rating = null) {
-    $fields = ['ID', 'title', 'excerpt_html as excerpt', 'image'];
-    if ( $rating ) $fields[] = "$rating AS rating";
+    if (sizeof($events) < 1) return array();
+    $fields = ['*'];
     $ids = join(',', doSlash(array_map(function ($item) { return $item['ID']; }, $events)));
     $filter = "ID IN (${ids})";
     $baseEvents = safe_rows(join(',',$fields), 'textpattern', $filter);
     $baseEvents = array_combine(array_map(function ($i) { return $i['ID']; }, $baseEvents), $baseEvents);
 
-    return array_map(function ($ev) use ($baseEvents) { return array_merge($ev, $baseEvents[$ev['ID']]); }, $events);
+    return array_map(function ($ev) use ($baseEvents) { return array_merge($baseEvents[$ev['ID']], $ev); }, $events);
 }
 
 function dtx_now($atts)
