@@ -147,7 +147,7 @@ function dtx_split_showings($events) {
             try {
                 $date = new DateTime(join(' ', array_slice($rawData, 0, 2)));
             } catch (Exception $e) {
-                return;
+                return NULL;
             }
             $flags = array_slice($rawData, 2);
             return array_merge( array(
@@ -158,7 +158,7 @@ function dtx_split_showings($events) {
         };
 
         $output = array_map( $format_showing, $showings );
-
+        $output = array_filter( $output, function ($item) { return $item != NULL; });
         return array_merge($carry, $output);
     };
     
@@ -170,8 +170,8 @@ function dtx_filter_showings($events, $earliest = null, $latest = null) {
     $latest = intval(safe_strtotime($latest));
 
     $dtx_date_filter = function ($event) use ($earliest, $latest) {
-        if (!$event['Posted']) return false;
-        $date = intval(safe_strtotime($event['Posted']));
+        if (!$event['uPosted']) return false;
+        $date = intval($event['uPosted']);
         return ($date >= intval($earliest)) && ($date <= intval($latest));
     };
 
