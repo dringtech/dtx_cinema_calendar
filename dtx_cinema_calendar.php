@@ -98,11 +98,16 @@ function dtx_showing_event($atts, $thing = null)
         'details'    => '',
         'section'    => null,
         'rating'     => null,
+        'wraptag'    => '',
+        'break'      => '',
+        'class'      => '',
     ), $atts));
 
-    $message = dtx_get_events($details, $from, $to, $section, $rating);
+    $events = dtx_get_events($details, $from, $to, $section, $rating);
 
-    return $message;
+    $out = dtx_render_articles($events, $thing);
+
+    return doWrap($out, $wraptag, $break, $class);
 }
 
 function dtx_get_events($details, $earliest, $latest, $section = null, $rating = null)
@@ -187,6 +192,23 @@ function dtx_augment_showings($events, $rating = null) {
     $baseEvents = array_combine(array_map(function ($i) { return $i['ID']; }, $baseEvents), $baseEvents);
 
     return array_map(function ($ev) use ($baseEvents) { return array_merge($baseEvents[$ev['ID']], $ev); }, $events);
+}
+
+function dtx_render_articles($events, $thing = null) {
+
+    if ($thing) {
+        $render = function ($event) use ($thing) {
+            global $thisarticle;
+            populateArticleData($event);
+            return parse($thing);
+        };    
+    } else {
+        $render = function ($event) {
+            return href( $event['Posted'], permlinkurl($event), ' title="'.$event['Title'].'"' );
+        };    
+    }
+
+    return array_map($render, $events);
 }
 
 function dtx_now($atts)
