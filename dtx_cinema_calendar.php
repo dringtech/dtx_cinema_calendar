@@ -99,26 +99,25 @@ function dtx_showing_event($atts, $thing = null)
         'to'         => '',
         'details'    => '',
         'section'    => null,
-        'rating'     => null,
         'wraptag'    => '',
         'break'      => '',
         'class'      => '',
     ), $atts));
 
-    $events = dtx_get_events($details, $from, $to, $section, $rating);
+    $events = dtx_get_events($details, $from, $to, $section);
+    $events = dtx_augment_showings($events, $rating);
 
     $out = dtx_render_articles($events, $thing);
 
     return doWrap($out, $wraptag, $break, $class);
 }
 
-function dtx_get_events($details, $earliest, $latest, $section = null, $rating = null)
+function dtx_get_events($details, $earliest, $latest, $section = null)
 {
     $events = dtx_get_showing_data($details, $section);
     $events = dtx_split_showings($events);
     $events = dtx_filter_showings($events, $earliest, $latest);
     $events = dtx_sort_showings($events);
-    $events = dtx_augment_showings($events, $rating);
     return $events;
 }
 
