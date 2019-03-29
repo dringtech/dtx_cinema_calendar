@@ -1,0 +1,9 @@
+#!/usr/bin/env php
+<?php
+
+$pluginName = 'dtx_cinema_calendar';
+$version = trim(shell_exec('git describe --always --dirty'));
+
+shell_exec("php src/${pluginName}.php > out/${pluginName}-${version}.txt");
+
+?>
