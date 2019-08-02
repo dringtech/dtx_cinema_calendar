@@ -37,7 +37,7 @@ $plugin['description'] = 'Manage showing times for cinema';
 // 3 = admin        : only on the non-AJAX admin side
 // 4 = admin+ajax   : only on admin side
 // 5 = public+admin+ajax   : on both the public and admin side
-# $plugin['type'] = 0;
+$plugin['type'] = 1;
 
 // Plugin 'flags' signal the presence of optional capabilities to the core plugin loader.
 // Use an appropriately OR-ed combination of these flags.
@@ -82,6 +82,16 @@ h1. Textile-formatted help goes here
 
 # --- BEGIN PLUGIN CODE ---
 
+if (txpinterface === 'admin') {
+    register_callback('dtx_cinema_calendar_install', 'plugin_lifecycle.dtx_cinema_calender', 'installed');
+    // TODO: Should not do this every time... 
+    dtx_cinema_calendar_install();
+    add_privs('dtx_calendar_admin', '1'); // Publishers only
+    register_tab('extensions', 'dtx_calendar_admin', 'Showings');
+    register_callback('dtx_calendar_admin_gui', 'dtx_calendar_admin');
+    register_callback('dtx_calendar_article_showing', 'article_ui', 'body');
+}
+
 // Register the new tag with Textpattern.
 \Txp::get('\Textpattern\Tag\Registry')
    ->register('dtx_showing_event')
@@ -89,6 +99,367 @@ h1. Textile-formatted help goes here
    ->register('dtx_extra_details')
    ->register('dtx_showing_details')
    ->register('dtx_now');
+
+
+/********************************************/
+/* Setup Functions                          */
+/********************************************/
+
+function dtx_cinema_calendar_install() {
+    $showings_table = 'dtx_showings';
+    safe_create(
+        $showings_table,
+        "`id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+        `movie_id` int(11) UNSIGNED NOT NULL,
+        `date_time` datetime NOT NULL,
+        PRIMARY KEY (id),
+        KEY (movie_id)"
+    );
+
+    $flag_fields = array(
+        'subtitled',
+        'audio_description',
+        'elevenses',
+        'parent_and_baby'
+    );
+    foreach ($flag_fields as $flag ) {
+        if (!getRows("SHOW COLUMNS FROM $showings_table LIKE '$flag'")) {
+            safe_alter(
+                $showings_table,
+                "ADD $flag boolean NOT NULL DEFAULT 0"
+            );
+        }
+    }
+}
+
+/********************************************/
+/* ADMIN FUNCTIONS                          */
+/********************************************/
+
+function dtx_calendar_article_showing($event, $step, $data, $rs) {
+    $now = date_create()->format('Y-m-d');
+    $screenings = safe_rows('*', 'dtx_showings', "movie_id = '$rs[ID]' AND date_time >= '$now'");
+    $screenings = join('', array_map(function ($s) {
+        $date_time = strftime("%c", date_create($s['date_time'])->getTimestamp());
+        return <<<ENTRY
+        <tr>
+            <td><a href='?showing_id=$s[id]&event=dtx_calendar_admin&step=dtx_calendar_edit_showing'>$date_time</a></td>
+            <td>$s[subtitled]</td>
+            <td>$s[audio_description]</td>
+            <td>$s[elevenses]</td>
+            <td>$s[parent_and_baby]</td>
+        </tr>
+ENTRY;
+    }, $screenings));
+    $form = <<<SCREENINGS
+    <label>Future Screenings</label>
+    <table>
+    <thead>
+        <th>Date / Time</th>
+        <th>S/T</th>
+        <th>A/D</th>
+        <th>11</th>
+        <th>PB</th>
+    </thead>
+    $screenings
+    </table>
+    <p><a href="?movie_id=$rs[ID]&event=dtx_calendar_admin&step=dtx_calendar_add_showing">Add screening</a></p>
+    </form>
+SCREENINGS;
+    return $data.$form;
+}
+
+function dtx_calendar_admin_gui($evt, $stp)
+{
+    if (!$stp or !in_array($stp, array(
+        'dtx_calendar_list',
+        'dtx_calendar_add_showing',
+        'dtx_calendar_save_showing',
+        'dtx_calendar_edit_showing',
+        'dtx_calendar_delete_showing',
+        'dtx_calendar_confirm_delete_showing'
+    ))) {
+        dtx_calendar_list();
+    } else {
+        $stp();
+    }
+}
+
+function dtx_calendar_list() {
+    pagetop('Showings');
+
+    $screenings = dtx_get_screenings();
+
+    foreach( $screenings as $a ) {
+        $date_time = strftime("%c", date_create($a['date_time'])->getTimestamp());
+        $showings[] = <<<SHOWING
+        <tr>
+            <td><a href="?event=article&step=edit&ID=$a[ID]">$a[Title]</a></td>
+            <td>$date_time</td>
+            <td>$a[subtitled]</td>
+            <td>$a[audio_description]</td>
+            <td>$a[elevenses]</td>
+            <td>$a[parent_and_baby]</td>
+            <td><a href="?event=dtx_calendar_admin&step=dtx_calendar_edit_showing&showing_id=$a[showing_id]">Edit</a></td>
+        </tr>
+SHOWING;
+    }
+
+    $showings = join("", $showings);
+
+    $page = <<<PAGEEND
+    <nav>
+        <form method="GET">
+            <input type="hidden" name="event" value="dtx_calendar_admin" />
+            <button type="submit" name="step" value="dtx_calendar_add_showing">Add showing</button>
+        </form>
+    </nav>
+
+    <section>
+    <h1>Movie Showings</h1>
+    <table>
+        <thead>
+            <th>Movie</th>
+            <th>Date and Time</th>
+            <th>S/T</th>
+            <th>A/D</th>
+            <th>11</th>
+            <th>PB</th>
+            <th>Actions</td>
+        </thead>
+        <tbody>
+        $showings
+        </tbody>
+    </table>
+    </section>
+
+PAGEEND;
+
+    echo $page;
+}
+
+function get_one_showing($id) {
+    return safe_row('*', 'dtx_showings', "id = $id");
+}
+
+function list_showing($id) {
+    $showing = get_one_showing($id);
+}
+
+function dtx_calendar_add_showing() {
+    $movie_id = $_GET[movie_id];
+
+    if (!$movie_id) {
+        pagetop('Showings');
+        echo '<h1>Select movie</h1>';
+        $movies_data = safe_rows("ID,Title", "textpattern", "Section IN ('movies')");
+        $movies = array_combine(
+            array_column($movies_data, 'Title'),
+            array_column($movies_data, 'ID')
+        );
+        $movies_json = json_encode($movies);
+
+        $datalist = join("", array_map(function ($key) {
+            return "<option value='$key'>";
+        }, array_keys($movies) ));
+        $searchbox = <<<SEARCHBOX
+            <datalist id="movies">$datalist</datalist>
+            <script type="text/javascript">
+                var options = $movies_json;
+                function populateMovie() {
+                    var selectedMovie = document.querySelector('#movie_name').value;
+                    var movieId = options[selectedMovie];
+                    document.querySelector('#movie_id').value = movieId;
+                }
+            </script>
+            <label for="movie_name">Search for movie</label>
+            <input id="movie_name" name="movie_name" list="movies" oninput="populateMovie()"></input>
+            <section id="selected_movie">
+                <form method='get'>
+                    <input type='hidden' name='event' value='dtx_calendar_admin'>
+                    <label for='movie_id'>Movie ID</label><input readonly name='movie_id' id='movie_id'>
+                    <button type='hidden' name='step' value='dtx_calendar_add_showing'>Add showing</button>
+                </form>
+            </section>
+SEARCHBOX;
+        echo $searchbox;
+    } else {
+        echo '<h1>Add showing</h1>';
+        dtx_calendar_showing_form();
+    }
+}
+
+function dtx_calendar_edit_showing() {
+    echo '<h1>Edit showing</h1>';
+    dtx_calendar_showing_form();
+}
+
+function dtx_calendar_showing_form() {
+    pagetop('Showings');
+
+    $id = $_GET['showing_id'];
+    $movie_id = $_GET['movie_id'];
+
+    if ($id) {
+        $showing_data = get_one_showing($id);
+        $date_time = date_create($showing_data[date_time]);
+        $date = $date_time->format('Y-m-d');
+        $time = $date_time->format('H:i');
+        $movie_id = $showing_data[movie_id];
+        $delete = "<input type='submit' formaction='?event=dtx_calendar_admin&step=dtx_calendar_delete_showing&showing_id=$id' value='Delete showing'/>";
+    }
+    $movie_details = safe_row('title', 'textpattern', "id = '$movie_id'");
+
+    $flagfield = function ($name, $label) use ($showing_data) {
+        $checked = ($showing_data[$name] == 1) ? 'checked' : '';
+        $input = <<<ENDINPUT
+            <label for="$name">$label</label>
+            <input type="checkbox" id="$name" name="$name" $checked>
+ENDINPUT;
+        return $input;
+    };
+
+    $flags[] = $flagfield('subtitled', 'Subtitled');
+    $flags[] = $flagfield('audio_description', 'Audio Description');
+    $flags[] = $flagfield('elevenses', 'Elevenses');
+    $flags[] = $flagfield('parent_and_baby', 'Parent & Baby');
+    $flags = join('', $flags);
+
+    $page = <<<PAGEEND
+        $searchbox
+    
+        <h2>$movie_details[title]</h2>
+        <form method="post" action="?event=dtx_calendar_admin&step=dtx_calendar_save_showing">
+            <input id="id" type="hidden" name="id" value="$id">
+            <input id="movie_id" type="hidden" name="movie_id" value="$movie_id">
+            <fieldset>
+                <label for="date">Date</label>
+                <input type="date" name="date" value="$date">
+                <label for="time">Time</label>
+                <input type="time" name="time" value="$time">
+            </fieldset>
+            <fieldset>
+                <legend>Showing attributes:</legend>
+                $flags
+            </fieldset>
+            <button action="submit">Save showing</button>
+            $delete
+        </form>
+
+PAGEEND;
+
+    echo $page;
+}
+
+function dtx_calendar_save_showing() {
+    $id = $_POST['id'];
+    $movie_id = $_POST['movie_id'];
+    $date_time = $_POST['date'] . ' ' . $_POST['time'];
+
+    $update = [ "movie_id=$movie_id", "date_time='$date_time'" ];
+    $flag_keys = array('subtitled', 'audio_description', 'elevenses', 'parent_and_baby');
+    foreach ( $flag_keys as $key ) {
+        $value = $_POST[$key] == 'on' ? 1 : 0;
+        $update[] = "$key='$value'";
+    }
+    $update = join(',', $update);
+
+    if ($id) {
+        safe_update('dtx_showings', $update, "id = '$id'");
+    } else {
+        safe_insert('dtx_showings', $update);    
+    }
+
+    // PRG redirect on completion
+    // dtx_calendar_list();
+    header('Location: ?event=dtx_calendar_admin&step=dtx_calendar_list', true, 303);
+}
+
+function dtx_calendar_delete_showing () {
+    pagetop('Showing');
+    $id = $_GET[showing_id];
+    echo "<h1>Delete a showing</h1>";
+    list_showing($id);
+    $page = <<<PAGE
+        <p>Are you sure you want to delete this showing?</p>
+        <form method="post" action="?event=dtx_calendar_admin&step=dtx_calendar_confirm_delete_showing">
+            <input type="hidden" name="showing_id" value="$id">
+            <input type="submit" name="delete" value="Confirm" />
+            <input type="submit" name="cancel" value="Cancel" />
+        </form>
+PAGE;
+
+    echo $page;
+}
+
+function dtx_calendar_confirm_delete_showing () {
+    $id = $_POST[showing_id];
+    if ($_POST['delete'] == 'Confirm' && $id) {
+        safe_delete('dtx_showings', "id = '$id'");
+    }
+    header('Location: ?event=dtx_calendar_admin&step=dtx_calendar_list', true, 303);
+}
+
+/**
+ * database query functions
+ */
+/**
+ * dtx_get_screenings
+ */
+function dtx_get_screenings($details, $earliest, $latest, $section = null) {
+    if ($details) {
+        $details = '*,'.$details;
+    } else {
+        $details = '*';
+    }
+
+    $details = join(',', preg_filter('/^/', 'textpattern.', do_list($details)));
+    // Compute filter
+    $filter = [];
+    if ($earliest) {
+        $start = date_create($earliest)->format('Y-m-d H:i:s');
+        $filter[] = "dtx_showings.date_time >= '$start'";
+    }
+    if ($latest) {
+        $end = date_create($latest)->format('Y-m-d H:i:s');
+        $filter[] = "dtx_showings.date_time < '$end'";
+    }
+    if ($section) {
+        $secFilter = 'textpattern.Section IN ('
+            . join(',', array_map('doQuote', doSlash(do_list($section))))
+            . ')';
+        $filter[] = $secFilter;
+    }
+    
+    $filter = join(' AND ', $filter);
+    if ($filter) $filter = 'WHERE ' . $filter;
+    
+    $join = safe_query( "SELECT
+        dtx_showings.*, $details
+        from dtx_showings LEFT JOIN (textpattern)
+        ON (dtx_showings.movie_id = textpattern.id)
+        $filter
+        ORDER BY dtx_showings.date_time" );
+    $showings = [];
+    $flags = array(
+        [ 'field' => 'audio_description', 'value' => 'A' ],
+        [ 'field' => 'subtitled', 'value' => 'S' ],
+        [ 'field' => 'parent_and_baby', 'value' => 'PB' ],
+        [ 'field' => 'elevenses', 'value' => '11' ]
+    );
+    while ($a = nextRow($join)) {
+        $date = date_create($a['date_time']);
+        $a['showing_id'] = $a['id'];
+        $a['Posted'] = $date->format('Y-m-d H:i:s');
+        $a['Expires'] = null;
+        $a['uPosted'] = $date->format('U');
+        $a['Flags'] = array_map(function ($f) use ($a) {
+            return ($a[$f['field']] == 1) ? $f['value'] : NULL;
+        }, $flags);
+        $showings[] = $a;
+    }
+    return $showings;
+}
 
 /**
  * Tag to output hello world.
@@ -776,11 +1147,11 @@ class DTX_Raw_Calendar
 
 function dtx_get_events($details, $earliest, $latest, $section = null)
 {
-    $events = dtx_get_showing_data($details, $section);
-    $events = dtx_split_showings($events);
-    $events = dtx_filter_showings($events, $earliest, $latest);
-    $events = dtx_sort_showings($events);
-    return $events;
+    // $events = dtx_get_showing_data($details, $section);
+    // $events = dtx_split_showings($events);
+    // $events = dtx_filter_showings($events, $earliest, $latest);
+    // $events = dtx_sort_showings($events);
+    return dtx_get_screenings($details, $earliest, $latest, $section = null);
 }
 
 function dtx_get_showing_data($details, $section = null) {
