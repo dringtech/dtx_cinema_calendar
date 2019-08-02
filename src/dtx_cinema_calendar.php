@@ -17,7 +17,7 @@
 // 1 = Plugin help is in raw HTML.  Not recommended.
 # $plugin['allow_html_help'] = 0;
 
-$plugin['version'] = '0.1';
+$plugin['version'] = '0.2';
 $plugin['author'] = 'Giles Dring';
 $plugin['author_uri'] = 'http://dringtech.com/';
 $plugin['description'] = 'Manage showing times for cinema';
@@ -103,6 +103,7 @@ function dtx_showing_event($atts, $thing = null)
         'wraptag'    => '',
         'break'      => '',
         'class'      => '',
+        'form'       => '',
     ), $atts));
 
     $events = dtx_get_events($details, $from, $to, $section);
@@ -861,11 +862,11 @@ function dtx_render_articles($events, $thing = null) {
 
     if ($thing) {
         $render = function ($event) use ($thing) {
-            global $thisarticle;
+            // global $thisarticle;
             populateArticleData($event);
             dtx_add_showing_extensions($event);
             return parse($thing);
-        };    
+        };
     } else {
         $render = function ($event) {
             return href( $event['Posted'], permlinkurl($event), ' title="'.$event['Title'].'"' );
