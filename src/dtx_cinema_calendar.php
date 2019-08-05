@@ -17,7 +17,7 @@
 // 1 = Plugin help is in raw HTML.  Not recommended.
 # $plugin['allow_html_help'] = 0;
 
-$plugin['version'] = '0.2';
+$plugin['version'] = '0.3';
 $plugin['author'] = 'Giles Dring';
 $plugin['author_uri'] = 'http://dringtech.com/';
 $plugin['description'] = 'Manage showing times for cinema';
@@ -74,7 +74,7 @@ if (0) {
 ?>
 # --- BEGIN PLUGIN HELP ---
 
-h1. Textile-formatted help goes here
+Documentation to come...
 
 # --- END PLUGIN HELP ---
 <?php
