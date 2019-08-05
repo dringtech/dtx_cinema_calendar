@@ -17,7 +17,7 @@
 // 1 = Plugin help is in raw HTML.  Not recommended.
 # $plugin['allow_html_help'] = 0;
 
-$plugin['version'] = '0.3';
+$plugin['version'] = '0.3.1';
 $plugin['author'] = 'Giles Dring';
 $plugin['author_uri'] = 'http://dringtech.com/';
 $plugin['description'] = 'Manage showing times for cinema';
@@ -260,7 +260,7 @@ function dtx_calendar_add_showing() {
         $movies_json = json_encode($movies);
 
         $datalist = join("", array_map(function ($key) {
-            return "<option value='$key'>";
+            return '<option value="' . htmlentities($key, ENT_QUOTES | ENT_HTML5) . '">';
         }, array_keys($movies) ));
         $searchbox = <<<SEARCHBOX
             <datalist id="movies">$datalist</datalist>
