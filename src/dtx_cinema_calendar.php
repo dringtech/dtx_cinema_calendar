@@ -477,8 +477,7 @@ function dtx_showing_event($atts, $thing = null)
         'form'       => '',
     ), $atts));
 
-    $events = dtx_get_events($details, $from, $to, $section);
-    $events = dtx_augment_showings($events, $rating);
+    $events = dtx_get_screenings($details, $from, $to, $section);
 
     $out = dtx_render_articles($events, $thing);
 
@@ -520,7 +519,7 @@ function dtx_calendar($atts, $thing = null) {
     $lastDay = "${year}-${month}-" . date('t', safe_strtotime($firstDay)) . ' 23:59:59';
     
     // Grab events in date range
-    $events = dtx_get_events($details, $firstDay, $lastDay, $section);
+    $events = dtx_get_screenings($details, $firstDay, $lastDay, $section);
   
     // Construct new calendar
     $calendar = new DTX_Calendar($year, $month, $events, $debug);
@@ -1143,90 +1142,6 @@ class DTX_Raw_Calendar
         }
         return '<tbody>' . join('',$c) . '</tbody>';
     }
-}
-
-function dtx_get_events($details, $earliest, $latest, $section = null)
-{
-    // $events = dtx_get_showing_data($details, $section);
-    // $events = dtx_split_showings($events);
-    // $events = dtx_filter_showings($events, $earliest, $latest);
-    // $events = dtx_sort_showings($events);
-    return dtx_get_screenings($details, $earliest, $latest, $section = null);
-}
-
-function dtx_get_showing_data($details, $section = null) {
-    $columns = array();
-    $columns[] = 'ID';
-    $columns[] = "${details} AS showings";
-
-    $filter = array();
-    $filter[] = "TRIM(IFNULL(${details},'')) <> ''";
-    if ($section) {
-        $secFilter = 'AND Section IN ('
-            . join(',', array_map('doQuote', doSlash(do_list($section))))
-            . ')';
-        $filter[] = $secFilter;
-    }
-
-    return safe_rows(join(',', $columns), 'textpattern', join(' ', $filter));
-}
-
-function dtx_split_showings($events) {
-    $split_showings = function ($carry, $item) {
-        $showings = do_list($item['showings'], ";");
-        unset($item['showings']);
-
-        $format_showing = function ($val) use ($item) {
-            $rawData = do_list($val, ",");
-            if ($rawData[0] == '') return NULL;
-            try {
-                $date = new DateTime($rawData[0]);
-            } catch (Exception $e) {
-                return NULL;
-            }
-            $flags = (sizeof($rawData) > 1) ? preg_split("/\s+/", $rawData[1]) : array();
-            return array_merge( array(
-                'Posted' => $date->format('Y-m-d H:i:s'),
-                'uPosted' => $date->format('U'),
-                'Flags' => $flags
-            ), $item );
-        };
-
-        $output = array_map( $format_showing, $showings );
-        $output = array_filter( $output, function ($item) { return $item != NULL; });
-        return array_merge($carry, $output);
-    };
-    
-    return array_reduce( $events, $split_showings, array() );
-}
-
-function dtx_filter_showings($events, $earliest = null, $latest = null) {
-    $earliest = intval(safe_strtotime($earliest));
-    $latest = intval(safe_strtotime($latest));
-
-    $dtx_date_filter = function ($event) use ($earliest, $latest) {
-        if (!$event['uPosted']) return false;
-        $date = intval($event['uPosted']);
-        return ($date >= intval($earliest)) && ($date <= intval($latest));
-    };
-
-    return array_filter($events, $dtx_date_filter);
-}
-
-function dtx_sort_showings($events) {
-    array_multisort(array_column($events, 'Posted'), SORT_ASC, $events);
-    return $events;
-}
-
-function dtx_augment_showings($events, $rating = null) {
-    if (sizeof($events) < 1) return array();
-    $fields = ['*'];
-    $ids = join(',', doSlash(array_map(function ($item) { return $item['ID']; }, $events)));
-    $filter = "ID IN (${ids})";
-    $baseEvents = safe_rows(join(',',$fields), 'textpattern', $filter);
-    $baseEvents = array_combine(array_map(function ($i) { return $i['ID']; }, $baseEvents), $baseEvents);
-
-    return array_map(function ($ev) use ($baseEvents) { return array_merge($baseEvents[$ev['ID']], $ev); }, $events);
 }
 
 function dtx_render_articles($events, $thing = null) {
