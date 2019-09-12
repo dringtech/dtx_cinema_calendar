@@ -17,7 +17,7 @@
 // 1 = Plugin help is in raw HTML.  Not recommended.
 # $plugin['allow_html_help'] = 0;
 
-$plugin['version'] = '0.4.0';
+$plugin['version'] = '0.4.1';
 $plugin['author'] = 'Giles Dring';
 $plugin['author_uri'] = 'http://dringtech.com/';
 $plugin['description'] = 'Manage showing times for cinema';
@@ -544,6 +544,7 @@ function dtx_calendar($atts, $thing = null) {
         'navarrow'   => '&#60;, &#62;',
         'remap'      => '',
         'weekstart'  => 1,
+        'calendar_page' => null,
     ), $atts));
   
     // Handle nvaigation overrides
@@ -574,7 +575,7 @@ function dtx_calendar($atts, $thing = null) {
     $events = dtx_get_screenings($details, $firstDay, $lastDay, $section);
   
     // Construct new calendar
-    $calendar = new DTX_Calendar($year, $month, $events, $debug);
+    $calendar = new DTX_Calendar($year, $month, $events, $calendar_page, $debug);
     $calendar->setFirstDayOfWeek($weekstart);
     $calendar->setNavInfo($navpclass,$navnclass,$navparr,$navnarr,$navid);
     $calendar->setRemap($dmap);
@@ -593,10 +594,11 @@ class DTX_Calendar extends DTX_Raw_Calendar
     var $debug = 0;
     var $events = array();
 
-    public function __construct($year, $month, $events, $debug = 0)
+    public function __construct($year, $month, $events, $cal_link, $debug = 0)
     {
         $this->debug = $debug;
         $this->events = $events;
+        $this->cal_link = $cal_link;
         parent::__construct($year,$month,$debug);
     }
 
@@ -633,8 +635,8 @@ class DTX_Calendar extends DTX_Raw_Calendar
             $flt[] = "y=$year";
             $flt[] = $this->remap['m']."=$month";
             $flt[] = $this->remap['y']."=$year";
-    
-            $link = $url . "?" . join(a, $flt);
+
+            $link = $this->cal_link . "?" . join(a, $flt);
             $content = '<a href="' . $link . '">' . $content . '</a>';
         }
 
