@@ -17,7 +17,7 @@
 // 1 = Plugin help is in raw HTML.  Not recommended.
 # $plugin['allow_html_help'] = 0;
 
-$plugin['version'] = '0.3.1';
+$plugin['version'] = '0.4.0';
 $plugin['author'] = 'Giles Dring';
 $plugin['author_uri'] = 'http://dringtech.com/';
 $plugin['description'] = 'Manage showing times for cinema';
@@ -461,6 +461,10 @@ function dtx_get_screenings($details, $earliest, $latest, $section = null) {
     return $showings;
 }
 
+function dtx_get_future_screenings_for_movie($id) {
+    return safe_rows('*', 'dtx_showings', "movie_id = '$id' AND DATE(date_time) >= CURDATE()");
+}
+
 /**
  * Tag to output hello world.
  */
@@ -482,6 +486,54 @@ function dtx_showing_event($atts, $thing = null)
     $out = dtx_render_articles($events, $thing);
 
     return doWrap($out, $wraptag, $break, $class);
+}
+
+function dtx_icons_for_screening($screening) {
+    $flags = [
+        subtitled,
+        audio_description,
+        elevenses,
+        parent_and_baby
+    ];
+
+    $makeIcon = function ($icon, $label) {
+        return '<span class="icon"><i class="fas '.$icon.'"></i></span>';
+    };
+    
+    $details = array(
+        subtitled => $makeIcon('fa-audio-description', 'Audio Description'),
+        audio_description => $makeIcon('fa-closed-captioning', 'Subtitled'),
+        elevenses => $makeIcon('fa-baby-carriage', 'Parent & Baby'),
+        parent_and_baby => $makeIcon('fa-mug-hot', 'Elevenses'),
+    );
+
+    foreach ($flags as $f) {
+        if ($screening[$f] == 1) $icons[] = $details[$f];
+    }
+
+    return $icons;
+}
+
+function dtx_showings_for_movie($atts, $thing = null) {
+    global $thisarticle;
+    $movie_id = $thisarticle['thisid'];
+    $screenings = dtx_get_future_screenings_for_movie($movie_id);
+
+    $out[] = doWrap([
+        doWrap([ 'Date', 'Time' ], 'tr', 'th')],
+        'thead', ''
+    );
+
+    foreach ( $screenings as $s) {
+        $date = date_create($s['date_time']);
+        $body[] = dowrap([
+            $date->format('l d F'),
+            $date->format('g:ia') . doWrap(dtx_icons_for_screening($s), '', '')
+        ], 'tr', 'td');
+    }
+    $out[] = doWrap($body, 'tbody', '');
+
+    return doWrap( $out, 'table', '');
 }
 
 function dtx_calendar($atts, $thing = null) {
