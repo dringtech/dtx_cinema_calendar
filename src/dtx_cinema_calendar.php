@@ -17,7 +17,7 @@
 // 1 = Plugin help is in raw HTML.  Not recommended.
 # $plugin['allow_html_help'] = 0;
 
-$plugin['version'] = '0.4.1';
+$plugin['version'] = '0.5.0';
 $plugin['author'] = 'Giles Dring';
 $plugin['author_uri'] = 'http://dringtech.com/';
 $plugin['description'] = 'Manage showing times for cinema';
@@ -252,10 +252,19 @@ function dtx_calendar_add_showing() {
     if (!$movie_id) {
         pagetop('Showings');
         echo '<h1>Select movie</h1>';
-        $movies_data = safe_rows("ID,Title", "textpattern", "Section IN ('movies')");
+        $movies_data = safe_rows(
+            "id,title,url_title,section,posted",
+            "textpattern",
+            "section IN ('movies', 'coming-soon', 'events')");
+        $label = array_map(
+            function ($a) {
+                return strtr('id: title section/url_title (posted)', $a);
+            },
+            $movies_data
+        );
         $movies = array_combine(
-            array_column($movies_data, 'Title'),
-            array_column($movies_data, 'ID')
+            $label,
+            array_column($movies_data, 'id')
         );
         $movies_json = json_encode($movies);
 
@@ -308,7 +317,9 @@ function dtx_calendar_showing_form() {
         $movie_id = $showing_data[movie_id];
         $delete = "<input type='submit' formaction='?event=dtx_calendar_admin&step=dtx_calendar_delete_showing&showing_id=$id' value='Delete showing'/>";
     }
-    $movie_details = safe_row('title', 'textpattern', "id = '$movie_id'");
+    $movie_details = safe_row(
+        'title,section,excerpt,url_title,posted',
+        'textpattern', "id = '$movie_id'");
 
     $flagfield = function ($name, $label) use ($showing_data) {
         $checked = ($showing_data[$name] == 1) ? 'checked' : '';
@@ -328,7 +339,9 @@ ENDINPUT;
     $page = <<<PAGEEND
         $searchbox
     
-        <h2>$movie_details[title]</h2>
+        <h2>$movie_details[title] - $movie_details[posted]</h2>
+        <p>$movie_details[section]/$movie_details[url_title]</p>
+        <div>$movie_details[excerpt]</div>
         <form method="post" action="?event=dtx_calendar_admin&step=dtx_calendar_save_showing">
             <input id="id" type="hidden" name="id" value="$id">
             <input id="movie_id" type="hidden" name="movie_id" value="$movie_id">
@@ -406,7 +419,7 @@ function dtx_calendar_confirm_delete_showing () {
 /**
  * dtx_get_screenings
  */
-function dtx_get_screenings($details, $earliest, $latest, $section = null) {
+function dtx_get_screenings($details = null, $earliest = null, $latest = null, $section = null) {
     if ($details) {
         $details = '*,'.$details;
     } else {
