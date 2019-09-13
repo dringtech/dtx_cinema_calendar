@@ -326,8 +326,12 @@ function dtx_calendar_showing_form() {
     $flagfield = function ($name, $label) use ($showing_data) {
         $checked = ($showing_data[$name] == 1) ? 'checked' : '';
         $input = <<<ENDINPUT
-            <label for="$name">$label</label>
-            <input type="checkbox" id="$name" name="$name" $checked>
+            <div class="txp-layout-4col">
+                <div class="txp-form-field">
+                    <label class="txp-form-field-label" for="$name">$label &rarr;</label>
+                    <input class="txp-form-field-checkbox" type="checkbox" id="$name" name="$name" $checked>
+                </div>
+            </div>
 ENDINPUT;
         return $input;
     };
@@ -344,21 +348,30 @@ ENDINPUT;
         <h2>$movie_details[title] - $movie_details[posted]</h2>
         <p>$movie_details[section]/$movie_details[url_title]</p>
         <div>$movie_details[excerpt]</div>
-        <form method="post" action="?event=dtx_calendar_admin&step=dtx_calendar_save_showing">
+        <form method="post" action="?event=dtx_calendar_admin&step=dtx_calendar_save_showing"
+            class="txp-tabs-vertical-group ui-tabs-panel">
             <input id="id" type="hidden" name="id" value="$id">
             <input id="movie_id" type="hidden" name="movie_id" value="$movie_id">
-            <fieldset>
-                <label for="date">Date</label>
-                <input type="date" name="date" value="$date">
-                <label for="time">Time</label>
-                <input type="time" name="time" value="$time">
-            </fieldset>
-            <fieldset>
-                <legend>Showing attributes:</legend>
-                $flags
-            </fieldset>
-            <button action="submit">Save showing</button>
-            $delete
+            <div class="txp-layout">
+                <div class="txp-layout-2col">
+                    <div class="txp-form-field">
+                        <label class="txp-form-field-label" for="date">Date</label>
+                        <input class="txp-form-field-value" type="date" name="date" value="$date">
+                    </div>
+                </div>
+                <div class="txp-layout-2col">
+                    <div class="txp-form-field">
+                        <label class="txp-form-field-label" for="time">Time</label>
+                        <input class="txp-form-field-value" type="time" name="time" value="$time">
+                    </div>
+                </div>
+                <fieldset class="txp-layout-1col">
+                    <legend>Showing attributes:</legend>
+                    <div class="txp-layout">$flags</div>
+                </fieldset>
+                <button action="submit">Save showing</button>
+                $delete
+            </div>
         </form>
 
 PAGEEND;
