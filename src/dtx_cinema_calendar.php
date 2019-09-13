@@ -17,7 +17,7 @@
 // 1 = Plugin help is in raw HTML.  Not recommended.
 # $plugin['allow_html_help'] = 0;
 
-$plugin['version'] = '0.5.0';
+$plugin['version'] = '0.6.0';
 $plugin['author'] = 'Giles Dring';
 $plugin['author_uri'] = 'http://dringtech.com/';
 $plugin['description'] = 'Manage showing times for cinema';
@@ -281,15 +281,17 @@ function dtx_calendar_add_showing() {
                     document.querySelector('#movie_id').value = movieId;
                 }
             </script>
-            <label for="movie_name">Search for movie</label>
-            <input id="movie_name" name="movie_name" list="movies" oninput="populateMovie()"></input>
-            <section id="selected_movie">
-                <form method='get'>
-                    <input type='hidden' name='event' value='dtx_calendar_admin'>
-                    <label for='movie_id'>Movie ID</label><input readonly name='movie_id' id='movie_id'>
-                    <button type='hidden' name='step' value='dtx_calendar_add_showing'>Add showing</button>
-                </form>
-            </section>
+            <form class="txp-tabs-vertical-group ui-tabs-panel">
+                <div class="txp-form-field">
+                    <label class="txp-form-field-label" for="movie_name">Search for movie</label>
+                    <input class="txp-form-field-value" id="movie_name" name="movie_name" list="movies" oninput="populateMovie()"></input>
+                </div>
+            </form>
+            <form method='get'>
+                <input type='hidden' name='event' value='dtx_calendar_admin'>
+                <input type='hidden' readonly name='movie_id' id='movie_id'>
+                <button name='step' value='dtx_calendar_add_showing'>Add showing</button>
+            </form>
 SEARCHBOX;
         echo $searchbox;
     } else {
