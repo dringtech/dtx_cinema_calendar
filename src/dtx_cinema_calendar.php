@@ -317,7 +317,7 @@ function dtx_calendar_showing_form() {
         $date = $date_time->format('Y-m-d');
         $time = $date_time->format('H:i');
         $movie_id = $showing_data[movie_id];
-        $delete = "<input type='submit' formaction='?event=dtx_calendar_admin&step=dtx_calendar_delete_showing&showing_id=$id' value='Delete showing'/>";
+        $delete = "<input type='submit' class='txp-button' formaction='?event=dtx_calendar_admin&step=dtx_calendar_delete_showing&showing_id=$id' value='Delete showing'/>";
     }
     $movie_details = safe_row(
         'title,section,excerpt,url_title,posted',
@@ -369,7 +369,7 @@ ENDINPUT;
                     <legend>Showing attributes:</legend>
                     <div class="txp-layout">$flags</div>
                 </fieldset>
-                <button action="submit">Save showing</button>
+                <button action="submit" class="txp-button">Save showing</button>
                 $delete
             </div>
         </form>
