@@ -17,7 +17,7 @@
 // 1 = Plugin help is in raw HTML.  Not recommended.
 # $plugin['allow_html_help'] = 0;
 
-$plugin['version'] = '0.6.0';
+$plugin['version'] = '0.6.1';
 $plugin['author'] = 'Giles Dring';
 $plugin['author_uri'] = 'http://dringtech.com/';
 $plugin['description'] = 'Manage showing times for cinema';
@@ -550,6 +550,8 @@ function dtx_showings_for_movie($atts, $thing = null) {
     global $thisarticle;
     $movie_id = $thisarticle['thisid'];
     $screenings = dtx_get_future_screenings_for_movie($movie_id);
+
+    if (count($screenings) == 0) return;
 
     $out[] = doWrap([
         doWrap([ 'Date', 'Time' ], 'tr', 'th')],
