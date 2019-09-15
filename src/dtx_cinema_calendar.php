@@ -509,11 +509,15 @@ function dtx_showing_event($atts, $thing = null)
         'form'       => '',
     ), $atts));
 
+    global $thisarticle;
+    $entryArticle = $thisarticle;
     $events = dtx_get_screenings($details, $from, $to, $section);
 
     $out = dtx_render_articles($events, $thing);
 
-    return doWrap($out, $wraptag, $break, $class);
+    $rendered = doWrap($out, $wraptag, $break, $class);
+    $thisarticle = $entryArticle;
+    return $rendered;
 }
 
 function dtx_icons_for_screening($screening) {
@@ -1230,7 +1234,6 @@ function dtx_render_articles($events, $thing = null) {
 
     if ($thing) {
         $render = function ($event) use ($thing) {
-            // global $thisarticle;
             populateArticleData($event);
             dtx_add_showing_extensions($event);
             return parse($thing);
@@ -1240,7 +1243,6 @@ function dtx_render_articles($events, $thing = null) {
             return href( $event['Posted'], permlinkurl($event), ' title="'.$event['Title'].'"' );
         };    
     }
-
     return array_map($render, $events);
 }
 
