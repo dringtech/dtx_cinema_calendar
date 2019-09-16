@@ -17,7 +17,7 @@
 // 1 = Plugin help is in raw HTML.  Not recommended.
 # $plugin['allow_html_help'] = 0;
 
-$plugin['version'] = '0.6.2';
+$plugin['version'] = '0.7.0';
 $plugin['author'] = 'Giles Dring';
 $plugin['author_uri'] = 'http://dringtech.com/';
 $plugin['description'] = 'Manage showing times for cinema';
@@ -1256,24 +1256,42 @@ function dtx_add_showing_extensions($event) {
 function dtx_showing_details($atts, $thing = null) {
     global $thisarticle;
 
-    $flags = $thisarticle['dtx']['flags'];
-
-    $makeIcon = function ($icon, $label) {
-        return '<div class="icon"><i class="fas '.$icon.'"></i></div><div class="label">'.$label.'</div>';
-    };
+    extract(lAtts(array(
+        'wraptag'    => 'ul',
+        'break'      => 'li',
+        'class'      => '',
+        'breakclass' => '',
+    ), $atts));
 
     $details = array(
-        'A' => $makeIcon('fa-audio-description', 'Audio Description'),
-        'S' => $makeIcon('fa-closed-captioning', 'Subtitled'),
-        'PB' => $makeIcon('fa-baby-carriage', 'Parent & Baby'),
-        '11' => $makeIcon('fa-mug-hot', 'Elevenses'),
+        'A' => [
+            icon  => 'audio-description',
+            label => 'Audio Description'
+        ],
+        'S' => [
+            icon  => 'closed-captioning',
+            label => 'Subtitled'
+        ],
+        'PB' => [
+            icon  => 'baby-carriage',
+            label => 'Parent & Baby'
+        ],
+        '11' => [
+            icon  => 'mug-hot',
+            label => 'Elevenses',
+        ],
     );
 
-    $out = array_map(function ($flag) use ($details) {
-        return $details[$flag];
-    }, $flags);
+    $flags = array_map(function ($f) use ($details) {
+        return $details[$f];
+    }, array_filter($thisarticle['dtx']['flags']));
 
-    return doWrap($out, 'ul', 'li', 'showing-details');
+    $render = function ($flag) {
+        return doTag($flag[icon], 'i', 'fas fa-' . $flag[icon]) . doTag($flag[label], 'p');
+    };
+
+    $out = array_map($render, $flags);
+    return doWrap($out, $wraptag, $break, $class, $breakclass);
 }
 
 function dtx_extra_details($atts, $thing = null) {
