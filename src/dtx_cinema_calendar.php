@@ -17,7 +17,7 @@
 // 1 = Plugin help is in raw HTML.  Not recommended.
 # $plugin['allow_html_help'] = 0;
 
-$plugin['version'] = '0.6.1';
+$plugin['version'] = '0.6.2';
 $plugin['author'] = 'Giles Dring';
 $plugin['author_uri'] = 'http://dringtech.com/';
 $plugin['description'] = 'Manage showing times for cinema';
@@ -535,8 +535,8 @@ function dtx_icons_for_screening($screening) {
     $details = array(
         subtitled => $makeIcon('fa-audio-description', 'Audio Description'),
         audio_description => $makeIcon('fa-closed-captioning', 'Subtitled'),
-        elevenses => $makeIcon('fa-baby-carriage', 'Parent & Baby'),
-        parent_and_baby => $makeIcon('fa-mug-hot', 'Elevenses'),
+        elevenses => $makeIcon('fa-mug-hot', 'Elevenses'),
+        parent_and_baby => $makeIcon('fa-baby-carriage', 'Parent & Baby'),
     );
 
     foreach ($flags as $f) {
