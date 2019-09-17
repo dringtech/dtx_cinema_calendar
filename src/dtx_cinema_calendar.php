@@ -17,7 +17,7 @@
 // 1 = Plugin help is in raw HTML.  Not recommended.
 # $plugin['allow_html_help'] = 0;
 
-$plugin['version'] = '0.7.0';
+$plugin['version'] = '0.8.0';
 $plugin['author'] = 'Giles Dring';
 $plugin['author_uri'] = 'http://dringtech.com/';
 $plugin['description'] = 'Manage showing times for cinema';
@@ -82,6 +82,21 @@ Documentation to come...
 
 # --- BEGIN PLUGIN CODE ---
 
+$GLOBALS['dtx_screening_flags'] = array(
+    'audio_description' => [
+        icon  => 'audio-description', label => 'Audio Description'
+    ],
+    'subtitled' => [
+        icon  => 'closed-captioning', label => 'Subtitled'
+    ],
+    'parent_and_baby' => [
+        icon  => 'baby-carriage', label => 'Parent & Baby'
+    ],
+    'elevenses' => [
+        icon  => 'mug-hot', label => 'Elevenses',
+    ],
+);
+
 if (txpinterface === 'admin') {
     register_callback('dtx_cinema_calendar_install', 'plugin_lifecycle.dtx_cinema_calender', 'installed');
     // TODO: Should not do this every time... 
@@ -106,6 +121,7 @@ if (txpinterface === 'admin') {
 /********************************************/
 
 function dtx_cinema_calendar_install() {
+    global $dtx_screening_flags;
     $showings_table = 'dtx_showings';
     safe_create(
         $showings_table,
@@ -116,12 +132,8 @@ function dtx_cinema_calendar_install() {
         KEY (movie_id)"
     );
 
-    $flag_fields = array(
-        'subtitled',
-        'audio_description',
-        'elevenses',
-        'parent_and_baby'
-    );
+    $flag_fields = array_keys($dtx_screening_flags);
+
     foreach ($flag_fields as $flag ) {
         if (!getRows("SHOW COLUMNS FROM $showings_table LIKE '$flag'")) {
             safe_alter(
@@ -469,21 +481,17 @@ function dtx_get_screenings($details = null, $earliest = null, $latest = null, $
         $filter
         ORDER BY dtx_showings.date_time" );
     $showings = [];
-    $flags = array(
-        [ 'field' => 'audio_description', 'value' => 'A' ],
-        [ 'field' => 'subtitled', 'value' => 'S' ],
-        [ 'field' => 'parent_and_baby', 'value' => 'PB' ],
-        [ 'field' => 'elevenses', 'value' => '11' ]
-    );
+    global $dtx_screening_flags;
+    $flags = array_keys($dtx_screening_flags);
     while ($a = nextRow($join)) {
         $date = date_create($a['date_time']);
         $a['showing_id'] = $a['id'];
         $a['Posted'] = $date->format('Y-m-d H:i:s');
         $a['Expires'] = null;
         $a['uPosted'] = $date->format('U');
-        $a['Flags'] = array_map(function ($f) use ($a) {
-            return ($a[$f['field']] == 1) ? $f['value'] : NULL;
-        }, $flags);
+        $a['Flags'] = array_filter( $flags, function ($f) use ($a) {
+            return $a[$f] == 1;
+        });
         $showings[] = $a;
     }
     return $showings;
@@ -521,26 +529,15 @@ function dtx_showing_event($atts, $thing = null)
 }
 
 function dtx_icons_for_screening($screening) {
-    $flags = [
-        subtitled,
-        audio_description,
-        elevenses,
-        parent_and_baby
-    ];
+    global $dtx_screening_flags;
+    $flags = array_keys($dtx_screening_flags);
 
-    $makeIcon = function ($icon, $label) {
-        return '<span class="icon"><i class="fas '.$icon.'"></i></span>';
+    $makeIcon = function ($f) use ($dtx_screening_flags) {
+        return '<span class="icon"><i class="fas fa-'.$dtx_screening_flags[$f][icon].'"></i></span>';
     };
-    
-    $details = array(
-        subtitled => $makeIcon('fa-audio-description', 'Audio Description'),
-        audio_description => $makeIcon('fa-closed-captioning', 'Subtitled'),
-        elevenses => $makeIcon('fa-mug-hot', 'Elevenses'),
-        parent_and_baby => $makeIcon('fa-baby-carriage', 'Parent & Baby'),
-    );
 
     foreach ($flags as $f) {
-        if ($screening[$f] == 1) $icons[] = $details[$f];
+        if ($screening[$f] == 1) $icons[] = $makeIcon($f);
     }
 
     return $icons;
@@ -1253,8 +1250,8 @@ function dtx_add_showing_extensions($event) {
     $thisarticle['dtx']['flags'] = $event['Flags'];
 }
 
-function dtx_showing_details($atts, $thing = null) {
-    global $thisarticle;
+function dtx_showing_details($atts, $thing = null){
+    global $thisarticle, $dtx_screening_flags;
 
     extract(lAtts(array(
         'wraptag'    => 'ul',
@@ -1263,24 +1260,7 @@ function dtx_showing_details($atts, $thing = null) {
         'breakclass' => '',
     ), $atts));
 
-    $details = array(
-        'A' => [
-            icon  => 'audio-description',
-            label => 'Audio Description'
-        ],
-        'S' => [
-            icon  => 'closed-captioning',
-            label => 'Subtitled'
-        ],
-        'PB' => [
-            icon  => 'baby-carriage',
-            label => 'Parent & Baby'
-        ],
-        '11' => [
-            icon  => 'mug-hot',
-            label => 'Elevenses',
-        ],
-    );
+    $details = $dtx_screening_flags;
 
     $flags = array_map(function ($f) use ($details) {
         return $details[$f];
