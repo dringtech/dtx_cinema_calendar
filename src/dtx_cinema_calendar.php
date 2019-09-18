@@ -17,7 +17,7 @@
 // 1 = Plugin help is in raw HTML.  Not recommended.
 # $plugin['allow_html_help'] = 0;
 
-$plugin['version'] = '0.8.0';
+$plugin['version'] = '0.8.1';
 $plugin['author'] = 'Giles Dring';
 $plugin['author_uri'] = 'http://dringtech.com/';
 $plugin['description'] = 'Manage showing times for cinema';
@@ -498,7 +498,7 @@ function dtx_get_screenings($details = null, $earliest = null, $latest = null, $
 }
 
 function dtx_get_future_screenings_for_movie($id) {
-    return safe_rows('*', 'dtx_showings', "movie_id = '$id' AND DATE(date_time) >= CURDATE()");
+    return safe_rows('*', 'dtx_showings', "movie_id = '$id' AND DATE(date_time) >= CURDATE() ORDER BY DATE(date_time)");
 }
 
 /**
