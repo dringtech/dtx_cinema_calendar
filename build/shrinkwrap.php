@@ -12,14 +12,14 @@ function flatten($file) {
             $include_file = join('/', [$dir, $m[1]]);
             $included_code = flatten($include_file);
             return <<<INCLUDE
-// START OF REPLACED $m[0]
+// START $m[0]
 ?>$included_code<?php
-// END OF REPLACED $m[0]
+// END $m[0]
 INCLUDE;
         },
         $source_code
     );
-    return $flattened_file;        
+    return preg_replace('/\?>\s*<\?php/', '', $flattened_file);
 }
 
 echo flatten($PLUGIN_FILE);
