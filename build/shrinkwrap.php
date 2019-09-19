@@ -1,6 +1,8 @@
 <?php
 $PLUGIN_FILE = $argv[1];
+$GLOBALS['GIT_VERSION'] = trim(shell_exec('git describe --always  --dirty'));
 function flatten($file) {
+    global $GIT_VERSION;
     $original_include_path = set_include_path(dirname($file));
     ob_start();
     readfile(realpath($file));
@@ -26,7 +28,11 @@ INCLUDE;
         $source_code
     );
     set_include_path($original_include_path);   
-    return preg_replace('/\?>\s*<\?php/', '', $flattened_file);
+    return preg_replace(
+        [ '/\?>\s*<\?php/', '/@@GIT_VERSION@@/' ],
+        [ '', $GIT_VERSION ],
+        $flattened_file
+    );
 }
 
 echo flatten($PLUGIN_FILE);
