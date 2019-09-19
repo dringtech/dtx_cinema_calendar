@@ -12,5 +12,8 @@ $GLOBALS['dtx_screening_flags'] = array(
     'elevenses' => [
         icon  => 'mug-hot', label => 'Elevenses',
     ],
+    'autism_friendly' => [
+        icon  => 'user-friends', label => 'Autism Friendly',
+    ]
 );
 ?>

@@ -15,6 +15,7 @@ function dtx_calendar_article_showing($event, $step, $data, $rs) {
             <td>$s[audio_description]</td>
             <td>$s[elevenses]</td>
             <td>$s[parent_and_baby]</td>
+            <td>$s[autistm_friendly]</td>
         </tr>
 ENTRY;
     }, $screenings));
@@ -27,6 +28,7 @@ ENTRY;
         <th>A/D</th>
         <th>11</th>
         <th>PB</th>
+        <th>AF</th>
     </thead>
     $screenings
     </table>
@@ -53,26 +55,30 @@ function dtx_calendar_admin_gui($evt, $stp)
 }
 
 function dtx_calendar_list() {
+    global $dtx_screening_flags;
     pagetop('Showings');
 
     $screenings = dtx_get_screenings();
 
     foreach( $screenings as $a ) {
         $date_time = strftime("%c", date_create($a['date_time'])->getTimestamp());
+        $flags = doWrap(array_map(function ($f) use ($a) {
+            return $a[$f];
+        }, array_keys($dtx_screening_flags)), '', 'td');
         $showings[] = <<<SHOWING
         <tr>
             <td><a href="?event=article&step=edit&ID=$a[ID]">$a[Title]</a></td>
             <td>$date_time</td>
-            <td>$a[subtitled]</td>
-            <td>$a[audio_description]</td>
-            <td>$a[elevenses]</td>
-            <td>$a[parent_and_baby]</td>
+            $flags
             <td><a href="?event=dtx_calendar_admin&step=dtx_calendar_edit_showing&showing_id=$a[showing_id]">Edit</a></td>
         </tr>
 SHOWING;
     }
 
     $showings = join("", $showings);
+    $flag_titles = doWrap(array_map(function ($f) {
+        return $f[label];
+    }, array_values($dtx_screening_flags)), '', 'th');
 
     $page = <<<PAGEEND
     <nav>
@@ -88,10 +94,7 @@ SHOWING;
         <thead>
             <th>Movie</th>
             <th>Date and Time</th>
-            <th>S/T</th>
-            <th>A/D</th>
-            <th>11</th>
-            <th>PB</th>
+            $flag_titles
             <th>Actions</td>
         </thead>
         <tbody>
@@ -173,6 +176,8 @@ function dtx_calendar_edit_showing() {
 }
 
 function dtx_calendar_showing_form() {
+    global $dtx_screening_flags;
+
     pagetop('Showings');
 
     $id = $_GET['showing_id'];
@@ -190,8 +195,9 @@ function dtx_calendar_showing_form() {
         'title,section,excerpt,url_title,posted',
         'textpattern', "id = '$movie_id'");
 
-    $flagfield = function ($name, $label) use ($showing_data) {
+    $flagfield = function ($name) use ($showing_data, $dtx_screening_flags) {
         $checked = ($showing_data[$name] == 1) ? 'checked' : '';
+        $label = $dtx_screening_flags[$name][label];
         $input = <<<ENDINPUT
             <div class="txp-layout-4col">
                 <div class="txp-form-field">
@@ -203,10 +209,7 @@ ENDINPUT;
         return $input;
     };
 
-    $flags[] = $flagfield('subtitled', 'Subtitled');
-    $flags[] = $flagfield('audio_description', 'Audio Description');
-    $flags[] = $flagfield('elevenses', 'Elevenses');
-    $flags[] = $flagfield('parent_and_baby', 'Parent & Baby');
+    $flags = array_map($flagfield, array_keys($dtx_screening_flags));
     $flags = join('', $flags);
 
     $page = <<<PAGEEND
@@ -247,12 +250,13 @@ PAGEEND;
 }
 
 function dtx_calendar_save_showing() {
+    global $dtx_screening_flags;
     $id = $_POST['id'];
     $movie_id = $_POST['movie_id'];
     $date_time = $_POST['date'] . ' ' . $_POST['time'];
 
     $update = [ "movie_id=$movie_id", "date_time='$date_time'" ];
-    $flag_keys = array('subtitled', 'audio_description', 'elevenses', 'parent_and_baby');
+    $flag_keys = array_keys($dtx_screening_flags);
     foreach ( $flag_keys as $key ) {
         $value = $_POST[$key] == 'on' ? 1 : 0;
         $update[] = "$key='$value'";
