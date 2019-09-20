@@ -50,7 +50,6 @@ SELECT dtx_showings.*, $details, MIN(dtx_showings.date_time) screening_time
     GROUP BY $dedup
     ORDER BY screening_time $sort LIMIT $limit
 QUERY;
-  dmp($query);
   
   $join = safe_query($query);
   $showings = [];
