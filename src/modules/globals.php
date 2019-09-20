@@ -14,6 +14,15 @@ $GLOBALS['dtx_screening_flags'] = array(
     ],
     'autism_friendly' => [
         icon  => 'user-friends', label => 'Autism Friendly',
+    ],
+    'surreal_reels' => [
+        icon => 'skull', label => 'Surreal Reels',
+    ],
+    'teatime_classic' => [
+        icon => 'film', label => 'Teatime Classics',
+    ],
+    'friends_presents' => [
+        icon => 'ticket-alt', label => 'Friends Presents',
     ]
 );
 ?>
