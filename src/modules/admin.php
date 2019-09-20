@@ -5,7 +5,7 @@
 
 function dtx_calendar_article_showing($event, $step, $data, $rs) {
     $now = date_create()->format('Y-m-d');
-    $screenings = safe_rows('*', 'dtx_showings', "movie_id = '$rs[ID]' AND date_time >= '$now'");
+    $screenings = safe_rows('*', 'dtx_showings', "movie_id = '$rs[ID]' AND date_time >= '$now' ORDER BY date_time ASC;");
     $screenings = join('', array_map(function ($s) {
         $date_time = strftime("%c", date_create($s['date_time'])->getTimestamp());
         return <<<ENTRY
@@ -15,7 +15,7 @@ function dtx_calendar_article_showing($event, $step, $data, $rs) {
             <td>$s[audio_description]</td>
             <td>$s[elevenses]</td>
             <td>$s[parent_and_baby]</td>
-            <td>$s[autistm_friendly]</td>
+            <td>$s[autism_friendly]</td>
         </tr>
 ENTRY;
     }, $screenings));
@@ -58,7 +58,7 @@ function dtx_calendar_list() {
     global $dtx_screening_flags;
     pagetop('Showings');
 
-    $screenings = dtx_get_screenings();
+    $screenings = dtx_get_screenings(null, null, null, null, 'DESC');
 
     foreach( $screenings as $a ) {
         $date_time = strftime("%c", date_create($a['date_time'])->getTimestamp());

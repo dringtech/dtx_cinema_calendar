@@ -2,7 +2,7 @@
 /**
  * dtx_get_screenings
  */
-function dtx_get_screenings($details = null, $earliest = null, $latest = null, $section = null) {
+function dtx_get_screenings($details = null, $earliest = null, $latest = null, $section = null, $sort = null) {
   if ($details) {
       $details = '*,'.$details;
   } else {
@@ -35,7 +35,7 @@ function dtx_get_screenings($details = null, $earliest = null, $latest = null, $
       from dtx_showings LEFT JOIN (textpattern)
       ON (dtx_showings.movie_id = textpattern.id)
       $filter
-      ORDER BY dtx_showings.date_time" );
+      ORDER BY dtx_showings.date_time $sort" );
   $showings = [];
   global $dtx_screening_flags;
   $flags = array_keys($dtx_screening_flags);
@@ -57,7 +57,7 @@ function dtx_get_future_screenings_for_movie($id) {
   return safe_rows(
     '*',
     'dtx_showings',
-    "movie_id = '$id' AND DATE(date_time) >= CURDATE() ORDER BY DATE(date_time)"
+    "movie_id = '$id' AND DATE(date_time) >= CURDATE() ORDER BY date_time"
   );
 }
 
