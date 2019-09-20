@@ -129,8 +129,10 @@ function dtx_icons_for_screening($screening) {
     $flags = array_keys($dtx_screening_flags);
 
     $makeIcon = function ($f) use ($dtx_screening_flags) {
-        return '<span class="icon"><i class="fas fa-'.$dtx_screening_flags[$f][icon].'"></i></span>';
+        return '<span class="icon"><i class="fas fa-'.$dtx_screening_flags[$f]['icon'].'"></i></span>';
     };
+
+    $icons = [];
 
     foreach ($flags as $f) {
         if ($screening[$f] == 1) $icons[] = $makeIcon($f);
@@ -276,7 +278,8 @@ class DTX_Calendar extends DTX_Raw_Calendar
 
     function dspHeader()
     {
-        // global $pretext, $smd_calinfo, $permlink_mode;
+        // global $pretext, $smd_calinfo,
+        global $permlink_mode;
 
         $currmo = $this->month;
         $curryr = $this->year;
@@ -683,9 +686,6 @@ class DTX_Raw_Calendar
         $j = 0; // count number of days displayed
         $end = false;
 
-        if ($this->showISOWeek) {
-            $c[] = "<th>".$this->ISOWeekHead."</th>";
-        }
         for($j = 0; $j<=6; $j++, $i++) {
             if($i == 7) { $i = 0; }
             $c[] = '<th>'.$this->getDayName($i)."</th>";
@@ -725,20 +725,6 @@ class DTX_Raw_Calendar
             if ( $i%7 == 0 ) { $c[] = '</tr>'; }
             if ( $d<$this->endDay && $i%7 == 0 ) {
                 $c[] = '<tr'.$rowClass.'>';
-                if ($this->showISOWeek) {
-                    // **Not** using safe_strtotime() here to cater for an operating timezone that differs from the server timezone.
-                    // Probably should do this in other places too but no bugs have been filed yet so it can be done on a
-                    // case-by-case basis
-                    $theTime = strtotime($this->year."-".$this->month."-".(int)($d + 1) ." 00:00");
-                    $reps = array(
-                        '{week}' => date('W', $theTime),
-                        '{month}' => date('n', $theTime),
-                        '{year}' => date('Y', $theTime),
-                        '{isoyear}' => date('o', $theTime),
-                    );
-                    $wkcell = strtr($this->ISOWeekCell, $reps);
-                    $c[] = '<td class="'.$isoClass.'">'.$wkcell.'</td>';
-                }
             }
         }
         // fill in the final row

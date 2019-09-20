@@ -67,6 +67,7 @@ function dtx_calendar($atts, $thing = null) {
         'remap'      => '',
         'weekstart'  => 1,
         'calendar_page' => null,
+        'debug'      => false
     ), $atts));
   
     // Handle nvaigation overrides
@@ -123,7 +124,7 @@ function dtx_showing_details($atts, $thing = null){
     }, array_filter($thisarticle['dtx']['flags']));
 
     $render = function ($flag) {
-        return doTag($flag[icon], 'i', 'fas fa-' . $flag[icon]) . doTag($flag[label], 'p');
+        return doTag($flag['icon'], 'i', 'fas fa-' . $flag['icon']) . doTag($flag['label'], 'p');
     };
 
     $out = array_map($render, $flags);
