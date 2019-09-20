@@ -39,16 +39,18 @@ function dtx_get_screenings(
   
   $filter = join(' AND ', $filter);
   if ($filter) $filter = 'WHERE ' . $filter;
-  if ($deduplicate) $dedup = 'GROUP BY textpattern.ID';
+  $dedup = 'dtx_showings.id';
+  if ($deduplicate) $dedup = 'textpattern.ID';
 
   $query = <<<QUERY
-SELECT dtx_showings.*, $details
+SELECT dtx_showings.*, $details, MIN(dtx_showings.date_time) screening_time
     FROM dtx_showings LEFT JOIN (textpattern)
     ON (dtx_showings.movie_id = textpattern.id)
     $filter
-    $dedup
-    ORDER BY dtx_showings.date_time $sort LIMIT $limit
+    GROUP BY $dedup
+    ORDER BY screening_time $sort LIMIT $limit
 QUERY;
+  dmp($query);
   
   $join = safe_query($query);
   $showings = [];
