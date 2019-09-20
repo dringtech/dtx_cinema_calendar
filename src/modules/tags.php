@@ -19,11 +19,13 @@ function dtx_showing_event($atts, $thing = null)
         'break'      => '',
         'class'      => '',
         'form'       => '',
+        'sort'       => 'ASC',
+        'limit'      => 50,
     ), $atts));
 
     global $thisarticle;
     $entryArticle = $thisarticle;
-    $events = dtx_get_screenings($details, $from, $to, $section);
+    $events = dtx_get_screenings($details, $from, $to, $section, $sort, $limit);
 
     $out = dtx_render_articles($events, $thing);
 

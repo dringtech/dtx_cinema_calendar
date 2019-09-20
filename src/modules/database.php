@@ -2,7 +2,16 @@
 /**
  * dtx_get_screenings
  */
-function dtx_get_screenings($details = null, $earliest = null, $latest = null, $section = null, $sort = null) {
+function dtx_get_screenings(
+    $details = null,
+    $earliest = null,
+    $latest = null,
+    $section = null,
+    $sort = 'ASC',
+    $limit = '50'
+) {
+    if ($limit == NULL) $limit = 50;
+    if ($sort == NULL) $sort = 'ASC';
   if ($details) {
       $details = '*,'.$details;
   } else {
@@ -29,13 +38,16 @@ function dtx_get_screenings($details = null, $earliest = null, $latest = null, $
   
   $filter = join(' AND ', $filter);
   if ($filter) $filter = 'WHERE ' . $filter;
+
+  $query = <<<QUERY
+SELECT dtx_showings.*, $details
+    FROM dtx_showings LEFT JOIN (textpattern)
+    ON (dtx_showings.movie_id = textpattern.id)
+    $filter
+    ORDER BY dtx_showings.date_time $sort LIMIT $limit
+QUERY;
   
-  $join = safe_query( "SELECT
-      dtx_showings.*, $details
-      from dtx_showings LEFT JOIN (textpattern)
-      ON (dtx_showings.movie_id = textpattern.id)
-      $filter
-      ORDER BY dtx_showings.date_time $sort" );
+  $join = safe_query($query);
   $showings = [];
   global $dtx_screening_flags;
   $flags = array_keys($dtx_screening_flags);
