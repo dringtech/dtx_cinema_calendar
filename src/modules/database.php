@@ -8,7 +8,8 @@ function dtx_get_screenings(
     $latest = null,
     $section = null,
     $sort = 'ASC',
-    $limit = '50'
+    $limit = '50',
+    $deduplicate = false
 ) {
     if ($limit == NULL) $limit = 50;
     if ($sort == NULL) $sort = 'ASC';
@@ -38,12 +39,14 @@ function dtx_get_screenings(
   
   $filter = join(' AND ', $filter);
   if ($filter) $filter = 'WHERE ' . $filter;
+  if ($deduplicate) $dedup = 'GROUP BY textpattern.ID';
 
   $query = <<<QUERY
 SELECT dtx_showings.*, $details
     FROM dtx_showings LEFT JOIN (textpattern)
     ON (dtx_showings.movie_id = textpattern.id)
     $filter
+    $dedup
     ORDER BY dtx_showings.date_time $sort LIMIT $limit
 QUERY;
   
