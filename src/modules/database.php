@@ -8,7 +8,7 @@ function dtx_get_screenings(
     $latest = null,
     $section = null,
     $sort = 'ASC',
-    $limit = '50',
+    $limit = '500',
     $deduplicate = false
 ) {
     if ($limit == NULL) $limit = 50;
