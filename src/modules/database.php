@@ -37,11 +37,10 @@ function dtx_get_screenings(
           . ')';
       $filter[] = $secFilter;
   }
-  if ($flags) {
-      $flags = explode(',', $flags);
-      $flagsFilter = array_map(function ($f) { return "${f}=1"; }, $flags);
-      $filter = array_merge($filter, $flagsFilter);
-      dmp($filter);
+    if ($flags) {
+        $flags = explode(',', $flags);
+        $flagsFilter = array_map(function ($f) { return "${f}=1"; }, $flags);
+        $filter = array_merge($filter, $flagsFilter);
     }
   
   $filter = join(' AND ', $filter);
