@@ -199,6 +199,12 @@ class DTX_Calendar extends DTX_Raw_Calendar
 
         if ($this->year == date('Y',$now) and $this->month == date('n',$now) and $theday == date('j',$now) ) {
             $cellclass[] = $this->cls_pfx.'today';
+            if ( gps('d') == NULL ) {
+                $cellclass[] = $this->cls_pfx.'selected';    
+            }
+        }
+        if ($theday == gps('d')) {
+            $cellclass[] = $this->cls_pfx.'selected';
         }
 
         $out = array();
