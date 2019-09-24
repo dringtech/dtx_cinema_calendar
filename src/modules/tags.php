@@ -22,11 +22,12 @@ function dtx_showing_event($atts, $thing = null)
         'sort'       => 'ASC',
         'limit'      => 50,
         'deduplicate' => '0',
+        'flags'       => null,
     ), $atts));
 
     global $thisarticle;
     $entryArticle = $thisarticle;
-    $events = dtx_get_screenings($details, $from, $to, $section, $sort, $limit, $deduplicate == 1 ? true : false );
+    $events = dtx_get_screenings($details, $from, $to, $section, $sort, $limit, $deduplicate == 1 ? true : false, $flags );
 
     $out = dtx_render_articles($events, $thing);
 

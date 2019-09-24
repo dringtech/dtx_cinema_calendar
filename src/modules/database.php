@@ -9,7 +9,8 @@ function dtx_get_screenings(
     $section = null,
     $sort = 'ASC',
     $limit = '500',
-    $deduplicate = false
+    $deduplicate = false, 
+    $flags = null
 ) {
     if ($limit == NULL) $limit = 50;
     if ($sort == NULL) $sort = 'ASC';
@@ -36,6 +37,12 @@ function dtx_get_screenings(
           . ')';
       $filter[] = $secFilter;
   }
+  if ($flags) {
+      $flags = explode(',', $flags);
+      $flagsFilter = array_map(function ($f) { return "${f}=1"; }, $flags);
+      $filter = array_merge($filter, $flagsFilter);
+      dmp($filter);
+    }
   
   $filter = join(' AND ', $filter);
   if ($filter) $filter = 'WHERE ' . $filter;
