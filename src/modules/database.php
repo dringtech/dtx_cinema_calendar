@@ -10,7 +10,8 @@ function dtx_get_screenings(
     $sort = 'ASC',
     $limit = '500',
     $deduplicate = false, 
-    $flags = null
+    $flags = null,
+    $not_flags = null
 ) {
     if ($limit == NULL) $limit = 50;
     if ($sort == NULL) $sort = 'ASC';
@@ -42,8 +43,14 @@ function dtx_get_screenings(
         $flagsFilter = array_map(function ($f) { return "${f}=1"; }, $flags);
         $filter = array_merge($filter, $flagsFilter);
     }
+    if ($not_flags) {
+        $not_flags = explode(',', $not_flags);
+        $notFlagsFilter = array_map(function ($f) { return "${f}=0"; }, $not_flags);
+        $filter = array_merge($filter, $notFlagsFilter);
+    }
   
   $filter = join(' AND ', $filter);
+  dmp($filter);
   if ($filter) $filter = 'WHERE ' . $filter;
   $dedup = 'dtx_showings.id';
   if ($deduplicate) $dedup = 'textpattern.ID';
