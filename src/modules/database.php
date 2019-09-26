@@ -50,7 +50,6 @@ function dtx_get_screenings(
     }
   
   $filter = join(' AND ', $filter);
-  dmp($filter);
   if ($filter) $filter = 'WHERE ' . $filter;
   $dedup = 'dtx_showings.id';
   if ($deduplicate) $dedup = 'textpattern.ID';
