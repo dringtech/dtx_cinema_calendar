@@ -122,6 +122,7 @@ function dtx_cinema_calendar_install() {
 }
 include 'modules/admin.php';
 include 'modules/database.php';
+include 'modules/flag.php';
 include 'modules/tags.php';
 
 function dtx_icons_for_screening($screening) {

@@ -6,6 +6,7 @@
     ->register('dtx_showing_details')
     ->register('dtx_showing_event')
     ->register('dtx_showings_for_movie')
+    ->register('dtx_has_flag')
     ;
 
 function dtx_showing_event($atts, $thing = null)
@@ -50,9 +51,10 @@ function dtx_showings_for_movie($atts, $thing = null) {
     );
 
     foreach ( $screenings as $s) {
+        $pb = $s['parent_and_baby'] == 1 ? ' - Parent & Baby only' : null;
         $date = date_create($s['date_time']);
         $body[] = dowrap([
-            $date->format('l d F'),
+            $date->format('l d F') . $pb,
             $date->format('g:ia') . doWrap(dtx_icons_for_screening($s), '', '')
         ], 'tr', 'td');
     }
@@ -133,6 +135,13 @@ function dtx_showing_details($atts, $thing = null){
     return doWrap($out, $wraptag, $break, $class, $breakclass);
 }
 
+function dtx_has_flag($atts, $thing = null) {
+    extract(lAtts(array(
+        'flag' => null,
+    ), $atts));
+
+    return flag_conditional_render($flag, $thing);
+}
 
 function dtx_now($atts)
 {
