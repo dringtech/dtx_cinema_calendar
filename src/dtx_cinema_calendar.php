@@ -87,7 +87,7 @@ if (txpinterface === 'admin') {
     register_callback('dtx_cinema_calendar_install', 'plugin_lifecycle.dtx_cinema_calender', 'installed');
     // TODO: Should not do this every time... 
     dtx_cinema_calendar_install();
-    add_privs('dtx_calendar_admin', '1'); // Publishers only
+    add_privs('dtx_calendar_admin', '1,2,3,4,5'); // Freelancer and above
     register_tab('extensions', 'dtx_calendar_admin', 'Showings');
     register_callback('dtx_calendar_admin_gui', 'dtx_calendar_admin');
     register_callback('dtx_calendar_article_showing', 'article_ui', 'body');
