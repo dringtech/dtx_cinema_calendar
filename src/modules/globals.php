@@ -25,4 +25,10 @@ $GLOBALS['dtx_screening_flags'] = array(
         'icon' => 'ticket-alt', 'label' => 'Friends Presents',
     ]
 );
+
+$GLOBALS['dtx_screening_fields'] = array(
+  'booking_link' => [
+    'type' => 'Varchar(255)', 'label' => 'Booking Link',
+  ],
+);
 ?>

@@ -98,7 +98,7 @@ if (txpinterface === 'admin') {
 /********************************************/
 
 function dtx_cinema_calendar_install() {
-    global $dtx_screening_flags;
+    global $dtx_screening_flags, $dtx_screening_fields;
     $showings_table = 'dtx_showings';
     safe_create(
         $showings_table,
@@ -118,6 +118,15 @@ function dtx_cinema_calendar_install() {
                 "ADD $flag boolean NOT NULL DEFAULT 0"
             );
         }
+    }
+
+    foreach ($dtx_screening_fields as $field => $value) {
+      if (!getRows("SHOW COLUMNS FROM $showings_table LIKE '$field'")) {
+        safe_alter(
+          $showings_table,
+          "ADD $field $value[type]"
+        );
+      }
     }
 }
 include 'modules/admin.php';
@@ -381,7 +390,7 @@ class DTX_Calendar extends DTX_Raw_Calendar
  * @author Oscar Merida
  * @created Jan 18 2004
  */
-class DTX_Raw_Calendar
+abstract class DTX_Raw_Calendar
 {
     var $gmt = 1, $lang, $debug = 0;
     var $year, $eyr, $lyr, $month, $week;
@@ -702,6 +711,7 @@ class DTX_Raw_Calendar
         return join('',$c);
     }
 
+    abstract function dspDayCell($theday);
     /**
      * Displays all day cells for the month.
      *

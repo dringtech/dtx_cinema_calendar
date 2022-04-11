@@ -53,9 +53,10 @@ function dtx_showings_for_movie($atts, $thing = null) {
     foreach ( $screenings as $s) {
         $pb = $s['parent_and_baby'] == 1 ? ' - Parent & Baby only' : null;
         $date = date_create($s['date_time']);
+        $link = $s['booking_link'] ? doTag('Book tickets', 'a', 'goal-button', "href=$s[booking_link]") : '';
         $body[] = dowrap([
             $date->format('l d F') . $pb,
-            $date->format('g:ia') . doWrap(dtx_icons_for_screening($s), '', '')
+            $date->format('g:ia') . doWrap(dtx_icons_for_screening($s), '', '') . $link
         ], 'tr', 'td');
     }
     $out[] = doWrap($body, 'tbody', '');

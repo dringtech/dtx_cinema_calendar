@@ -7,15 +7,18 @@ function dtx_calendar_article_showing($event, $step, $data, $rs) {
     $now = date_create()->format('Y-m-d');
     $screenings = safe_rows('*', 'dtx_showings', "movie_id = '$rs[ID]' AND date_time >= '$now' ORDER BY date_time ASC;");
     $screenings = join('', array_map(function ($s) {
+        global $rs;
         $date_time = strftime("%c", date_create($s['date_time'])->getTimestamp());
+        $link_set = $s['booking_link'] ? "<a href='$s[booking_link]'>Link</a>" : '';
         return <<<ENTRY
         <tr>
-            <td><a href='?showing_id=$s[id]&event=dtx_calendar_admin&step=dtx_calendar_edit_showing'>$date_time</a></td>
+            <td><a href="?showing_id=$s[id]&event=dtx_calendar_admin&step=dtx_calendar_edit_showing&return=movie">$date_time</a></td>
             <td>$s[subtitled]</td>
             <td>$s[audio_description]</td>
             <td>$s[elevenses]</td>
             <td>$s[parent_and_baby]</td>
             <td>$s[autism_friendly]</td>
+            <td>$link_set</td>
         </tr>
 ENTRY;
     }, $screenings));
@@ -29,10 +32,11 @@ ENTRY;
         <th>11</th>
         <th>PB</th>
         <th>AF</th>
+        <th>Booking Link</th>
     </thead>
     $screenings
     </table>
-    <p><a href="?movie_id=$rs[ID]&event=dtx_calendar_admin&step=dtx_calendar_add_showing">Add screening</a></p>
+    <p><a href="?movie_id=$rs[ID]&event=dtx_calendar_admin&step=dtx_calendar_add_showing&return=movie">Add screening</a></p>
     </form>
 SCREENINGS;
     return $data.$form;
@@ -77,7 +81,7 @@ SHOWING;
 
     $showings = join("", $showings);
     $flag_titles = doWrap(array_map(function ($f) {
-        return $f[label];
+        return $f['label'];
     }, array_values($dtx_screening_flags)), '', 'th');
 
     $page = <<<PAGEEND
@@ -117,7 +121,7 @@ function list_showing($id) {
 }
 
 function dtx_calendar_add_showing() {
-    $movie_id = $_GET[movie_id];
+    $movie_id = $_GET['movie_id'];
 
     if (!$movie_id) {
         pagetop('Showings');
@@ -176,20 +180,22 @@ function dtx_calendar_edit_showing() {
 }
 
 function dtx_calendar_showing_form() {
-    global $dtx_screening_flags;
+    global $dtx_screening_flags, $searchbox;
 
     pagetop('Showings');
 
     $id = $_GET['showing_id'];
     $movie_id = $_GET['movie_id'];
+    $return = $_GET['return'];
 
     if ($id) {
         $showing_data = get_one_showing($id);
-        $date_time = date_create($showing_data[date_time]);
+        $date_time = date_create($showing_data['date_time']);
         $date = $date_time->format('Y-m-d');
         $time = $date_time->format('H:i');
-        $movie_id = $showing_data[movie_id];
+        $movie_id = $showing_data['movie_id'];
         $delete = "<input type='submit' class='txp-button' formaction='?event=dtx_calendar_admin&step=dtx_calendar_delete_showing&showing_id=$id' value='Delete showing'/>";
+        $booking_link = $showing_data['booking_link'];
     }
     $movie_details = safe_row(
         'title,section,excerpt,url_title,posted',
@@ -197,7 +203,7 @@ function dtx_calendar_showing_form() {
 
     $flagfield = function ($name) use ($showing_data, $dtx_screening_flags) {
         $checked = ($showing_data[$name] == 1) ? 'checked' : '';
-        $label = $dtx_screening_flags[$name][label];
+        $label = $dtx_screening_flags[$name]['label'];
         $input = <<<ENDINPUT
             <div class="txp-layout-4col">
                 <div class="txp-form-field">
@@ -222,6 +228,7 @@ ENDINPUT;
             class="txp-tabs-vertical-group ui-tabs-panel">
             <input id="id" type="hidden" name="id" value="$id">
             <input id="movie_id" type="hidden" name="movie_id" value="$movie_id">
+            <input type="hidden" name="return" value="$return">
             <div class="txp-layout">
                 <div class="txp-layout-2col">
                     <div class="txp-form-field">
@@ -234,6 +241,10 @@ ENDINPUT;
                         <label class="txp-form-field-label" for="time">Time</label>
                         <input class="txp-form-field-value" type="time" name="time" value="$time">
                     </div>
+                </div>
+                <div class="txp-layout-1col txp-form-field">
+                  <label class="txp-form-field-label" for="booking_link">Booking Link</label>
+                  <input class="txp-form-field-value" type="url" name="booking_link" value="$booking_link">
                 </div>
                 <fieldset class="txp-layout-1col">
                     <legend>Showing attributes:</legend>
@@ -250,9 +261,10 @@ PAGEEND;
 }
 
 function dtx_calendar_save_showing() {
-    global $dtx_screening_flags;
+    global $dtx_screening_flags, $dtx_screening_fields;
     $id = $_POST['id'];
     $movie_id = $_POST['movie_id'];
+    $return = $_POST['return'];
     $date_time = $_POST['date'] . ' ' . $_POST['time'];
 
     $update = [ "movie_id=$movie_id", "date_time='$date_time'" ];
@@ -260,6 +272,11 @@ function dtx_calendar_save_showing() {
     foreach ( $flag_keys as $key ) {
         $value = $_POST[$key] == 'on' ? 1 : 0;
         $update[] = "$key='$value'";
+    }
+    $field_keys = array_keys($dtx_screening_fields);
+    foreach ( $field_keys as $key ) {
+      $value = $_POST[$key];
+      $update[] = "$key='$value'";
     }
     $update = join(',', $update);
 
@@ -271,12 +288,16 @@ function dtx_calendar_save_showing() {
 
     // PRG redirect on completion
     // dtx_calendar_list();
-    header('Location: ?event=dtx_calendar_admin&step=dtx_calendar_list', true, 303);
+    if ($return == 'movie') {
+      header("Location: ?event=article&step=edit&ID=$movie_id", true, 303);
+    } else {
+      header('Location: ?event=dtx_calendar_admin&step=dtx_calendar_list', true, 303);
+    }
 }
 
 function dtx_calendar_delete_showing () {
     pagetop('Showing');
-    $id = $_GET[showing_id];
+    $id = $_GET['showing_id'];
     echo "<h1>Delete a showing</h1>";
     list_showing($id);
     $page = <<<PAGE
@@ -292,7 +313,7 @@ PAGE;
 }
 
 function dtx_calendar_confirm_delete_showing () {
-    $id = $_POST[showing_id];
+    $id = $_POST['showing_id'];
     if ($_POST['delete'] == 'Confirm' && $id) {
         safe_delete('dtx_showings', "id = '$id'");
     }
