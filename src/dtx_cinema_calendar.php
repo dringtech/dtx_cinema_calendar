@@ -139,7 +139,11 @@ function dtx_icons_for_screening($screening) {
     $flags = array_keys($dtx_screening_flags);
 
     $makeIcon = function ($f) use ($dtx_screening_flags) {
-        return '<span class="icon"><i class="fas fa-'.$dtx_screening_flags[$f]['icon'].'"></i></span>';
+        return '<span class="icon" title="'
+          . $dtx_screening_flags[$f]['label']
+          . '"><i class="fas fa-'
+          . $dtx_screening_flags[$f]['icon'] 
+          . '"></i></span>';
     };
 
     $icons = [];
@@ -775,6 +779,7 @@ function dtx_render_articles($events, $thing = null) {
 function dtx_add_showing_extensions($event) {
     global $thisarticle;
     $thisarticle['dtx']['flags'] = $event['Flags'];
+    // TODO Add fields to this as well
 }
 
 // Adapted from: http://php.net/manual/en/function.strftime.php
